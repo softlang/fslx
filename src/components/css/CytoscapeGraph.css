@@ -1,0 +1,114 @@
+.cytoscape-container {
+    position: relative;
+    width: 99dvw;
+    height: 78dvh;
+    align-self: center;
+    display: flex;
+    flex-direction: column;
+    outline: none;
+    background: #1e2028;
+    border-radius: 8px;
+}
+
+.cytoscape-breadcrumb {
+    margin-left: 6px;
+}
+
+.cytoscape-breadcrumb-list {
+    cursor: default;
+}
+
+.cytoscape-breadcrumb-link {
+    padding: 0;
+
+    background: none;
+    border: none;
+
+    color: inherit;
+
+    font-family: inherit;
+    font-size: inherit;
+
+    cursor: pointer;
+}
+
+.cytoscape-graph {
+    height: 100%;
+    width: 100%;
+}
+
+.cytoscape-tooltip {
+    position: absolute;
+
+    display: none;
+
+    max-width: 350px;
+    padding: 12px 14px;
+
+    background: #1d1e25;
+    border: 1px solid #3a3c46;
+    border-radius: 8px;
+
+    color: #f5f5f5;
+    font-size: 13px;
+    line-height: 1.4;
+
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.35);
+
+    pointer-events: none;
+
+    z-index: 100;
+}
+
+.cytoscape-tooltip.visible {
+    display: block;
+}
+
+.tooltip-title {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.tooltip-comment {
+    color: #c5c6cc;
+    margin-bottom: 10px;
+
+    max-width: 320px;
+}
+
+.tooltip-section {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+    padding-top: 8px;
+    border-top: 1px solid #353640;
+}
+
+.tooltip-section > div {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+}
+
+.tooltip-label {
+    color: #8f919b;
+}
+
+.tooltip-relation {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.tooltip-relation > div:not(.tooltip-arrow) {
+    display: flex;
+    flex-direction: column;
+}
+
+.tooltip-arrow {
+    color: #ef5b71;
+    font-size: 18px;
+    text-align: center;
+}

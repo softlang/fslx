@@ -1,0 +1,145 @@
+.predicates-picker {
+    position: relative;
+    width: 270px;
+    flex-shrink: 0;
+
+    font-family: inherit;
+}
+
+.predicates-picker-button {
+    width: 100%;
+    height: 42px;
+    box-sizing: border-box;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 0 14px;
+
+    background: #1e2028;
+    color: #ffffff;
+
+    border: 1px solid #3a3d48;
+    border-radius: 8px;
+
+    font-size: 14px;
+    font-weight: 500;
+
+    cursor: pointer;
+}
+
+.predicates-picker-button:hover {
+    background: #252832;
+    border-color: #4a4e5c;
+}
+
+.predicates-picker-arrow {
+    font-size: 16px;
+    transition: transform 0.15s ease;
+}
+
+.predicates-picker-arrow.open {
+    transform: rotate(180deg);
+}
+
+.predicates-picker-dropdown {
+    z-index: 100;
+    position: absolute;
+
+    top: calc(100% + 6px);
+    left: 0;
+
+    width: 100%;
+    max-height: 70dvh;
+
+    box-sizing: border-box;
+
+    display: flex;
+    flex-direction: column;
+
+    background: #1e2028;
+
+    border: 1px solid #3a3d48;
+    border-radius: 8px;
+
+    box-shadow: 0 8px 24px rgba(0, 0, 0);
+
+    overflow: hidden;
+}
+
+.predicates-picker-header {
+    flex-shrink: 0;
+
+    padding: 10px 14px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+
+    border-bottom: 1px solid #353844;
+}
+
+.predicates-picker-header-text {
+
+    color: #8f94a3;
+
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.predicates-picker-list {
+    min-height: 0;
+
+    display: flex;
+    flex-direction: column;
+
+    overflow-y: auto;
+
+    padding: 6px 0;
+}
+
+.predicate-option {
+    display: flex;
+    align-items: center;
+
+    gap: 10px;
+
+    padding: 8px 14px;
+
+    color: #e5e7eb;
+
+    font-size: 14px;
+
+    cursor: pointer;
+
+    transition: background-color 0.1s ease;
+}
+
+.predicate-option:hover {
+    background: #292d38;
+}
+
+.predicate-option input {
+    flex-shrink: 0;
+
+    width: 16px;
+    height: 16px;
+
+    margin: 0;
+
+    accent-color: #5B8DEF;
+
+    cursor: pointer;
+}
+
+.predicates-picker-footer {
+    flex-shrink: 0;
+
+    padding: 9px 14px;
+
+    border-top: 1px solid #353844;
+    color: #777d8b;
+
+    font-size: 11px;
+}

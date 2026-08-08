@@ -1,0 +1,1 @@
+export type CQValues = Record<string, string | string[]>;

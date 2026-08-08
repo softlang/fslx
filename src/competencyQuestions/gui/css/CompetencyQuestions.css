@@ -1,0 +1,25 @@
+.cq-builder {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-content: center;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.cq-builder-question {
+    display: flex;
+    flex-direction: row;
+    gap: 12px;
+}
+
+.cq-builder-field {
+    flex-grow: 1;
+}
+
+.cq-builder-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+}
