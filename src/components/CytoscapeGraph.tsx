@@ -1,4 +1,4 @@
-import {useCallback, useEffect, useMemo, useRef, useState} from "react";
+import {type CSSProperties, type Dispatch, type SetStateAction, useCallback, useEffect, useMemo, useRef, useState} from "react";
 import {OntologyGraphBuilder} from "../ontology/OntologyGraphBuilder.ts";
 import cytoscape from "cytoscape";
 import type {Ontology} from "../ontology/Ontology.ts";
@@ -15,6 +15,8 @@ type Props = {
     setSearchResults: (results: OntologyClass[] | null) => void,
     cqResult: CQResult | null,
     setCQResult: (result: CQResult | null) => void,
+    breadCrumb: BreadcrumbItem[],
+    setBreadCrumb: Dispatch<SetStateAction<BreadcrumbItem[]>>,
 };
 export type GraphContext = {
     originClasses: OntologyClass[];
@@ -26,6 +28,19 @@ export type GraphRelation = {
     target: OntologyClass;
     predicate: string;
 }
+
+export type GraphView =
+    | {kind: "root"}
+    | {kind: "class", clazz: OntologyClass}
+    | {kind: "cq", result: CQResult}
+    | {kind: "search", results: OntologyClass[]}
+
+export type BreadcrumbItem = {
+    label: string,
+    view: GraphView
+}
+
+const VISIBLE_BREADCRUMB_ITEMS = 8;
 
 const GRAPH_STYLE: cytoscape.StylesheetJson = [
     {
@@ -118,45 +133,48 @@ export default function CytoscapeGraph({
                                            setSearchResults,
                                            cqResult,
                                            setCQResult,
+                                           breadCrumb,
+                                           setBreadCrumb,
                                        }: Props) {
 
     const graphRef = useRef<HTMLDivElement>(null);
     const tooltipRef = useRef<HTMLDivElement>(null);
     const cyRef = useRef<cytoscape.Core | null>(null);
-    const [focusClasses, setFocusClasses] = useState<OntologyClass[] | null>(null);
+    const [focusClass, setFocusClass] = useState<OntologyClass | null>(null);
     const rootClasses = useMemo(
         () => ontology.rootClassesIDs
             .map(id => ontology.classes.get(id))
             .filter((c): c is OntologyClass => c !== undefined),
         [ontology]
     );
-    const [breadCrumb, setBreadCrumb] = useState<OntologyClass[]>([]);
 
-    const currentFocusClasses = cqResult?.focusClasses ?? (focusClasses ?? rootClasses);
-    const displayClasses = searchResults ?? currentFocusClasses;
+    const currentView: GraphView = useMemo(() => {
+        if (cqResult) {
+            return {kind: "cq", result: cqResult};
+        }
+        if (searchResults !== null) {
+            return {kind: "search", results: searchResults};
+        }
+        if (focusClass) {
+            return {kind: "class", clazz: focusClass};
+        }
+        return {kind: "root"};
+    }, [cqResult, focusClass, searchResults]);
 
-    const cqGraphContext = cqResult?.graphContext;
+    const graphContext: GraphContext = useMemo(() => {
+        switch (currentView.kind) {
+            case "cq":
+                return currentView.result.graphContext;
+            case "search":
+                return {originClasses: currentView.results, relations: [], visibleRelations};
+            case "class":
+                return createContext([currentView.clazz], ontology, visibleRelations);
+            case "root":
+                return createContext(rootClasses, ontology, visibleRelations);
+        }
+    }, [currentView, ontology, rootClasses, visibleRelations]);
 
-    const graphContext: GraphContext = useMemo(
-        () =>
-            (// If given, load CQ Graph
-                cqGraphContext ??
-                // If search is active, display results, otherwise create full context
-                (searchResults !== null ?
-                        {
-                            originClasses: searchResults,
-                            relations: [],
-                            visibleRelations: visibleRelations
-                        }
-                        : createContext(
-                            currentFocusClasses,
-                            ontology,
-                            visibleRelations
-                        )
-                )
-            ),
-        [cqGraphContext, currentFocusClasses, ontology, searchResults, visibleRelations]
-    );
+    const displayClasses = graphContext.originClasses;
 
     const dynamicLayout = useMemo(() => {
         return displayClasses.length === 1
@@ -184,30 +202,31 @@ export default function CytoscapeGraph({
         tooltipRef.current?.classList.remove("visible");
     }, []);
 
+    const showView = useCallback((view: GraphView) => {
+        hideTooltip();
+        setCQResult(view.kind === "cq" ? view.result : null);
+        setSearchResults(view.kind === "search" ? view.results : null);
+        setFocusClass(view.kind === "class" ? view.clazz : null);
+    }, [hideTooltip, setCQResult, setSearchResults]);
+
     const navigateToRoot = useCallback(() => {
-        hideTooltip();
-        setSearchResults(null);
-        setCQResult(null);
-        setFocusClasses(null);
+        showView({kind: "root"});
         setBreadCrumb([]);
-    }, [hideTooltip, setCQResult, setSearchResults]);
+    }, [setBreadCrumb, showView]);
 
-    const navigateToClass = useCallback((focusClass: OntologyClass) => {
-        hideTooltip();
-        setSearchResults(null);
-        setCQResult(null);
-        setFocusClasses([focusClass]);
+    const navigateToClass = useCallback((clazz: OntologyClass) => {
+        showView({kind: "class", clazz});
 
-        setBreadCrumb(prev => {
-            const existingIndex = prev.findIndex(c => c.id === focusClass.id);
+        setBreadCrumb(prev => [...prev, {
+            label: clazz.label ?? clazz.id,
+            view: {kind: "class", clazz}
+        }]);
+    }, [setBreadCrumb, showView]);
 
-            if (existingIndex !== -1) {
-                return prev.slice(0, existingIndex + 1);
-            }
-
-            return [...prev, focusClass];
-        });
-    }, [hideTooltip, setCQResult, setSearchResults]);
+    const navigateToBreadcrumbItem = useCallback((item: BreadcrumbItem, index: number) => {
+        setBreadCrumb(prev => prev.slice(0, index + 1));
+        showView(item.view);
+    }, [setBreadCrumb, showView]);
 
     useEffect(() => {
         if (!graphRef.current) return;
@@ -300,34 +319,42 @@ export default function CytoscapeGraph({
         cy.nodes().removeClass("focus");
 
         cy.edges().forEach(edge => {
-            if (currentFocusClasses.some(c => edge.source().id() === c.id)) {
+            if (displayClasses.some(c => edge.source().id() === c.id)) {
                 edge.addClass("outgoing");
-            } else if (currentFocusClasses.some(c => edge.target().id() === c.id)) {
+            } else if (displayClasses.some(c => edge.target().id() === c.id)) {
                 edge.addClass("incoming");
             }
         });
 
-        currentFocusClasses.forEach(clazz => cy.getElementById(clazz.id).addClass("focus"));
-    }, [currentFocusClasses, graphContext]);
+        displayClasses.forEach(clazz => cy.getElementById(clazz.id).addClass("focus"));
+    }, [displayClasses, graphContext]);
 
     return (
         <div className="cytoscape-container">
-            <div className="cytoscape-breadcrumb">
+            <div className="cytoscape-breadcrumb"
+                 style={{"--breadcrumb-slots": VISIBLE_BREADCRUMB_ITEMS + 2} as CSSProperties}>
                 <span className="cytoscape-breadcrumb-list">
                     <button type="button" onClick={navigateToRoot}
                             className="cytoscape-breadcrumb-link">
                         Root
                     </button>
                 </span>
-                {breadCrumb.map(c => (
-                    <span key={c.id} className="cytoscape-breadcrumb-list">
-                        {" > "}
-                        <button type="button" onClick={() => navigateToClass(c)}
-                                className="cytoscape-breadcrumb-link">
-                            {c.label ?? c.id}
-                        </button>
-                    </span>
-                ))}
+                {breadCrumb.length > VISIBLE_BREADCRUMB_ITEMS &&
+                    <span className="cytoscape-breadcrumb-list">{" > …"}</span>
+                }
+                {breadCrumb
+                    .map((item, index) => ({item, index}))
+                    .slice(-VISIBLE_BREADCRUMB_ITEMS)
+                    .map(({item, index}) => (
+                        <span key={index} className="cytoscape-breadcrumb-list">
+                            {" > "}
+                            <button type="button" onClick={() => navigateToBreadcrumbItem(item, index)}
+                                    title={item.label}
+                                    className={`cytoscape-breadcrumb-link ${item.view.kind === "class" ? "" : "query"}`}>
+                                {item.label}
+                            </button>
+                        </span>
+                    ))}
             </div>
             <div
                 ref={graphRef}

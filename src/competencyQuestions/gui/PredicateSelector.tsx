@@ -7,7 +7,6 @@ type Props = {
     onSelect: (value: string[]) => void,
 }
 
-// TODO: Maybe only show relevant Predicates when Class(-es) selected, meaning only Predicates included in Classes relations
 export default function PredicatesSelector({label, predicates, value, onSelect}: Props) {
 
     const togglePredicate = (predicate: string) => {

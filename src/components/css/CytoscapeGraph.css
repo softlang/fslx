@@ -12,14 +12,26 @@
 
 .cytoscape-breadcrumb {
     margin-left: 6px;
+    flex-shrink: 0;
+
+    white-space: nowrap;
+    overflow-x: auto;
 }
 
 .cytoscape-breadcrumb-list {
     cursor: default;
 }
 
+.cytoscape-breadcrumb-link.query {
+    font-style: italic;
+}
+
 .cytoscape-breadcrumb-link {
     padding: 0;
+    max-width: calc(100% / var(--breadcrumb-slots));
+
+    display: inline-block;
+    vertical-align: bottom;
 
     background: none;
     border: none;
@@ -29,11 +41,16 @@
     font-family: inherit;
     font-size: inherit;
 
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
     cursor: pointer;
 }
 
 .cytoscape-graph {
-    height: 100%;
+    flex: 1;
+    min-height: 0;
     width: 100%;
 }
 

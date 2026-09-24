@@ -159,8 +159,7 @@ export class CQExecutor {
                 originClasses: focusClasses,
                 relations,
                 visibleRelations: predicates.length > 0 ? predicates : ontology.allPredicates
-            },
-            focusClasses
+            }
         };
     }
 }

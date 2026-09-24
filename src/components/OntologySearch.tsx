@@ -5,7 +5,7 @@ import "./css/OntologySearch.css"
 
 type Props = {
     ontology: Ontology,
-    setSearchResults: (results: OntologyClass[] | null) => void,
+    setSearchResults: (results: OntologyClass[] | null, term: string) => void,
 }
 
 export default function OntologySearch({ontology, setSearchResults}: Props) {
@@ -15,9 +15,9 @@ export default function OntologySearch({ontology, setSearchResults}: Props) {
         const lowerCaseTerm = term.trim().toLowerCase();
         if(lowerCaseTerm.length > 0) {
             const result = ontology.simpleSearchOntology(lowerCaseTerm);
-            setSearchResults(result);
+            setSearchResults(result, term.trim());
         } else {
-            setSearchResults(null);
+            setSearchResults(null, "");
         }
     }
 
