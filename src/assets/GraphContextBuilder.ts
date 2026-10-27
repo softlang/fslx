@@ -5,37 +5,30 @@ import type {Ontology} from "../ontology/Ontology.ts";
 
 export const createContext = (originClasses: OntologyClass[], ontology: Ontology, visibleRelations: string[]): GraphContext => {
     const relations: GraphRelation[] = [];
-    const visiblePredicates = new Set(visibleRelations);
+    const visiblePredicates = ontology.predicateIRIsOf(visibleRelations);
 
-    function processRelation(relation: OntologyRelation, source: OntologyClass) {
-        if (!visiblePredicates.has(relation.predicate)) {
+    function processRelation(relation: OntologyRelation) {
+        if (!visiblePredicates.has(relation.predicate.value)) {
             return;
         }
 
-        const target = ontology.classes.get(relation.targetId);
+        const source = ontology.classes.get(relation.subject.value);
+        const target = ontology.classes.get(relation.object.value);
 
-        if (!target) {
+        if (!source || !target) {
             return;
         }
 
         relations.push({
             source,
             target,
-            predicate: relation.predicate
+            predicate: ontology.predicateName(relation)
         })
     }
 
-    for (const source of originClasses) {
-        for (const relation of source.relations) {
-            processRelation(relation, source);
-        }
-        for (const incomingRelation of source.incomingRelations) {
-            const sourceClass = ontology.classes.get(incomingRelation.sourceId);
-            if (!sourceClass) {
-                continue;
-            }
-            processRelation({predicate: incomingRelation.predicate, targetId: source.id}, sourceClass);
-        }
+    for (const origin of originClasses) {
+        origin.relations.forEach(processRelation);
+        origin.incomingRelations.forEach(processRelation);
     }
 
     return {originClasses, relations, visibleRelations};

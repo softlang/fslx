@@ -1,19 +1,9 @@
-import {parse, type Store, sym} from "rdflib";
-import {OntologyModule} from "./OntologyModule.ts";
-import {OWL} from "./vocabulary/owl.ts";
+import {parse, type Store} from "rdflib";
 
 export class OntologyParser {
 
-    static async parse(file: File, store: Store): Promise<OntologyModule> {
-        const ttl = await file.text();
-        const doc = sym("file:///" + file.name);
-
-        parse(ttl, store, doc.value, "text/turtle");
-
-        const imports = store.match(null, OWL.imports, null, doc)
-            .map(statement => OntologyParser.shorten(statement.object.value));
-
-        return new OntologyModule(file, doc, imports);
+    static parse(name: string, ttl: string, store: Store) {
+        parse(ttl, store, "file:///" + name, "text/turtle");
     }
 
     public static shorten(uri: string): string {

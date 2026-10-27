@@ -2,7 +2,6 @@ import cytoscape from "cytoscape";
 import type {Ontology} from "../ontology/Ontology.ts";
 import * as React from "react";
 
-// TODO: classes without a label render as "undefined" here
 export function renderNodeTooltip(event: cytoscape.EventObject, ontology: Ontology, tooltipRef: React.RefObject<HTMLDivElement | null>, graphRef: React.RefObject<HTMLDivElement | null>) {
     const node = event.target;
     const hoveredId = node.id();
@@ -19,7 +18,7 @@ export function renderNodeTooltip(event: cytoscape.EventObject, ontology: Ontolo
 
     tooltip.innerHTML = `
                 <div class="tooltip-title">
-                    ${clazz.label}
+                    ${clazz.name}
                 </div>
         
                 ${clazz.comment ? `
@@ -76,7 +75,7 @@ export function renderEdgeTooltip(event: cytoscape.EventObject, tooltipRef: Reac
                 <div class="tooltip-relation">
                     <div>
                         <span class="tooltip-label">From</span>
-                        ${source.label}
+                        ${source.name}
                     </div>
         
                     <div class="tooltip-arrow">
@@ -85,7 +84,7 @@ export function renderEdgeTooltip(event: cytoscape.EventObject, tooltipRef: Reac
         
                     <div>
                         <span class="tooltip-label">To</span>
-                        ${target.label}
+                        ${target.name}
                     </div>
                 </div>
             `;

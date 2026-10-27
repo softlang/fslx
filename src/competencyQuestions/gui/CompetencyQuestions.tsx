@@ -36,12 +36,12 @@ export default function CompetencyQuestions({ontology, setCQResult, setBreadCrum
             if (!ontologyClass) {
                 continue;
             }
-            ontologyClass.relations.forEach(r => p.add(r.predicate));
-            ontologyClass.incomingRelations.forEach(r => p.add(r.predicate));
+            ontologyClass.relations.forEach(r => p.add(ontology.predicateName(r)));
+            ontologyClass.incomingRelations.forEach(r => p.add(ontology.predicateName(r)));
         }
 
         return ontology.allPredicates.filter(predicate => p.has(predicate));
-    }, [ontology.allPredicates, ontology.classes, values]);
+    }, [ontology, values]);
     
     const isComplete = selectedDefinition?.fields.every(field => {
         if (field.optional) {

@@ -218,7 +218,7 @@ export default function CytoscapeGraph({
         showView({kind: "class", clazz});
 
         setBreadCrumb(prev => [...prev, {
-            label: clazz.label ?? clazz.id,
+            label: clazz.name,
             view: {kind: "class", clazz}
         }]);
     }, [setBreadCrumb, showView]);
@@ -284,7 +284,7 @@ export default function CytoscapeGraph({
         if (!cy) return;
 
         const builder = new OntologyGraphBuilder();
-        const elements = builder.build(graphContext);
+        const elements = builder.build(graphContext, ontology);
         const elementIDs = new Set(elements.map(element => String(element.data.id)));
         let structureChanged = false;
 
@@ -309,7 +309,7 @@ export default function CytoscapeGraph({
         if (structureChanged) {
             cy.layout(dynamicLayout).run();
         }
-    }, [dynamicLayout, graphContext]);
+    }, [dynamicLayout, graphContext, ontology]);
 
     useEffect(() => {
         const cy = cyRef.current;

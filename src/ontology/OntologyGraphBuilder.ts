@@ -1,24 +1,26 @@
 import type cytoscape from "cytoscape";
 import type {OntologyClass} from "./types/OntologyClass.ts";
 import type {GraphContext} from "../components/CytoscapeGraph.tsx";
+import type {Ontology} from "./Ontology.ts";
 
 export class OntologyGraphBuilder {
     private nodes = new Map<string, cytoscape.ElementDefinition>();
     private edges = new Map<string, cytoscape.ElementDefinition>();
 
-    public build(context: GraphContext): cytoscape.ElementDefinition[] {
+    public build(context: GraphContext, ontology: Ontology): cytoscape.ElementDefinition[] {
         this.nodes.clear();
         this.edges.clear();
         const visibleRelations = new Set(context.visibleRelations);
+        const visiblePredicates = ontology.predicateIRIsOf(context.visibleRelations);
 
-        context.originClasses.forEach(clazz => this.addNode(clazz, visibleRelations));
+        context.originClasses.forEach(clazz => this.addNode(clazz, visiblePredicates));
 
         context.relations.forEach(relation => {
             if (!visibleRelations.has(relation.predicate)) {
                 return;
             }
-            this.addNode(relation.source, visibleRelations);
-            this.addNode(relation.target, visibleRelations);
+            this.addNode(relation.source, visiblePredicates);
+            this.addNode(relation.target, visiblePredicates);
             this.addEdge(relation.source, relation.target, relation.predicate);
         })
 
@@ -41,19 +43,18 @@ export class OntologyGraphBuilder {
         });
     }
 
-    private addNode(clazz: OntologyClass, visibleRelations: Set<string>) {
+    private addNode(clazz: OntologyClass, visiblePredicates: Set<string>) {
         if (this.nodes.has(clazz.id)) {
             return;
         }
 
-        const size = clazz.relations.filter(r => visibleRelations.has(r.predicate)).length
-            + clazz.incomingRelations.filter(r => visibleRelations.has(r.predicate)).length;
+        const size = clazz.relations.filter(r => visiblePredicates.has(r.predicate.value)).length
+            + clazz.incomingRelations.filter(r => visiblePredicates.has(r.predicate.value)).length;
 
         this.nodes.set(clazz.id, {
             data: {
                 id: clazz.id,
-                label: (clazz.label ?? clazz.id) + " [" + size + "]",
-                clazz: clazz,
+                label: clazz.name + " [" + size + "]",
             }
         });
     }

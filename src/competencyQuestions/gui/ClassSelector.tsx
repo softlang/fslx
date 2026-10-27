@@ -14,7 +14,7 @@ export default function ClassSelector({label, ontology, value, onSelect}: Props)
 
     return (
         <Selector
-            label={value ?? label}
+            label={(value && classes.get(value)?.name) || label}
             headerText=""
             content={
             Array.from(classes.values())

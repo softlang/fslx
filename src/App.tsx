@@ -1,7 +1,6 @@
 import './App.css'
 import {useCallback, useState} from "react";
-import type {Ontology} from "./ontology/Ontology.ts";
-import UploadArea from "./components/UploadArea.tsx";
+import {OntologyLoader} from "./ontology/OntologyLoader.ts";
 import CytoscapeGraph, {type BreadcrumbItem} from "./components/CytoscapeGraph.tsx";
 import PredicatesPicker from "./components/PredicatesPicker.tsx";
 import OntologySearch from "./components/OntologySearch.tsx";
@@ -10,7 +9,7 @@ import CompetencyQuestions from './competencyQuestions/gui/CompetencyQuestions.t
 import type {CQResult} from "./competencyQuestions/model/CQResult.ts";
 
 function App() {
-    const [ontology, setOntology] = useState<Ontology>();
+    const [ontology] = useState(() => new OntologyLoader().load());
     const [visiblePredicates, setVisiblePredicates] = useState<string[]>([]);
     const [searchResults, setSearchResults] = useState<OntologyClass[] | null>(null);
     const [cqResult, setCQResult] = useState<CQResult | null>(null);
@@ -33,8 +32,13 @@ function App() {
     return (
         <>
             {!ontology &&
-                // TODO: automatic Git "Download" from /fsl - check possible implementations (clone/pull/download/..)
-                <UploadArea setOntology={setOntology}/>
+                <div className="ontology-missing">
+                    <h2>No ontology found</h2>
+                    {import.meta.env.DEV
+                        ? <p>Run <code>git submodule update --init</code> and restart the dev server.</p>
+                        : <p>The ontology could not be loaded. Please try again later.</p>
+                    }
+                </div>
             }
             {ontology &&
                 <div className="content-container">

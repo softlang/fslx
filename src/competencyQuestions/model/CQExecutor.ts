@@ -44,7 +44,7 @@ export class CQExecutor {
         const predicates = this.predicatesOf(query);
         const relations: GraphRelation[] = [];
 
-        for (const edge of this.edgesOf(subject, predicates)) {
+        for (const edge of this.edgesOf(ontology, subject, predicates)) {
             const other = ontology.classes.get(edge.otherId);
             if (!other) {
                 continue;
@@ -65,8 +65,8 @@ export class CQExecutor {
         const predicates = this.predicatesOf(query);
         const relations: GraphRelation[] = [];
 
-        for (const edge of this.edgesOf(subjectA, predicates)) {
-            if (!this.hasEdge(subjectB, edge)) {
+        for (const edge of this.edgesOf(ontology, subjectA, predicates)) {
+            if (!this.hasEdge(ontology, subjectB, edge)) {
                 continue;
             }
 
@@ -92,8 +92,8 @@ export class CQExecutor {
         const relations: GraphRelation[] = [];
 
         for (const [subject, counterpart] of [[subjectA, subjectB], [subjectB, subjectA]]) {
-            for (const edge of this.edgesOf(subject, predicates)) {
-                if (this.hasEdge(counterpart, edge)) {
+            for (const edge of this.edgesOf(ontology, subject, predicates)) {
+                if (this.hasEdge(ontology, counterpart, edge)) {
                     continue;
                 }
 
@@ -115,7 +115,7 @@ export class CQExecutor {
             return null;
         }
 
-        const relations = this.edgesOf(subject)
+        const relations = this.edgesOf(ontology, subject)
             .filter(edge => edge.otherId === classification.id)
             .map(edge => this.toGraphRelation(subject, classification, edge));
 
@@ -131,19 +131,19 @@ export class CQExecutor {
         return Array.isArray(value) ? value : [];
     }
 
-    private edgesOf(clazz: OntologyClass, predicates: string[] = []): Edge[] {
+    private edgesOf(ontology: Ontology, clazz: OntologyClass, predicates: string[] = []): Edge[] {
         const edges: Edge[] = [
-            ...clazz.relations.map(r => ({predicate: r.predicate, otherId: r.targetId, outgoing: true})),
-            ...clazz.incomingRelations.map(r => ({predicate: r.predicate, otherId: r.sourceId, outgoing: false}))
+            ...clazz.relations.map(r => ({predicate: ontology.predicateName(r), otherId: r.object.value, outgoing: true})),
+            ...clazz.incomingRelations.map(r => ({predicate: ontology.predicateName(r), otherId: r.subject.value, outgoing: false}))
         ];
 
         return predicates.length > 0 ? edges.filter(edge => predicates.includes(edge.predicate)) : edges;
     }
 
-    private hasEdge(clazz: OntologyClass, edge: Edge): boolean {
+    private hasEdge(ontology: Ontology, clazz: OntologyClass, edge: Edge): boolean {
         return edge.outgoing
-            ? clazz.relations.some(r => r.predicate === edge.predicate && r.targetId === edge.otherId)
-            : clazz.incomingRelations.some(r => r.predicate === edge.predicate && r.sourceId === edge.otherId);
+            ? clazz.relations.some(r => ontology.predicateName(r) === edge.predicate && r.object.value === edge.otherId)
+            : clazz.incomingRelations.some(r => ontology.predicateName(r) === edge.predicate && r.subject.value === edge.otherId);
     }
 
     private toGraphRelation(subject: OntologyClass, other: OntologyClass, edge: Edge): GraphRelation {

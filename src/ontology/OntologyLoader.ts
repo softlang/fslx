@@ -1,24 +1,22 @@
 import {graph} from "rdflib";
-import {OntologyModule} from "./OntologyModule.ts";
 import {OntologyParser} from "./OntologyParser.ts";
 import {Ontology} from "./Ontology.ts";
-import {OntologyValidator} from "./OntologyValidator.ts";
+
+const TTLS = import.meta.glob<string>("/fsl/ontologies/*.ttl", {query: "?raw", import: "default", eager: true});
 
 export class OntologyLoader {
     public constructor() {}
 
-    public async load(files: FileList | null): Promise<Ontology> {
-        const store = graph();
-        const mods: OntologyModule[] = [];
+    public load(): Ontology | undefined {
+        const files = Object.entries(TTLS);
 
-        for (const file of Array.from(files ?? [])) {
-            mods.push(await OntologyParser.parse(file, store));
+        if (files.length === 0) {
+            return undefined;
         }
 
-        const ontology = new Ontology(store, mods);
-        const validator = new OntologyValidator();
-        validator.validate(ontology);
-        console.error(validator.errorMessages);
-        return ontology;
+        const store = graph();
+        files.forEach(([path, ttl]) => OntologyParser.parse(OntologyParser.shorten(path), ttl, store));
+
+        return new Ontology(store);
     }
 }
