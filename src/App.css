@@ -1,14 +1,23 @@
 input[type="text"] {
     box-sizing: border-box;
-    border: 1px solid #3a3d48;
-    border-radius: 4px;
-    background: #3b3d45;
-    color: #e5e7eb;
+    border: 1px solid #e2e9f0;
+    border-radius: 8px;
+    background: #f6f8fb;
+    color: #25465f;
     outline: none;
 }
 
+input[type="text"]:focus {
+    border-color: #5593ce;
+    box-shadow: 0 0 0 3px #e4eff9;
+}
+
+input[type="text"]::placeholder {
+    color: #a3afbc;
+}
+
 .ontology-missing {
-    height: 100dvh;
+    flex: 1;
 
     display: flex;
     flex-direction: column;
@@ -16,19 +25,99 @@ input[type="text"] {
     align-items: center;
 }
 
-.top-bar-container {
-    width: 100%;
-    display: flex;
-    flex-direction: row;
-    justify-content: space-around;
-    align-items: center;
-    height: 20dvh;
-    box-sizing: border-box;
-}
-
 .content-container {
     width: 100%;
     height: 100dvh;
     display: flex;
     flex-direction: column;
+}
+
+.header {
+    flex-shrink: 0;
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    padding: 19px 26px;
+
+    background: var(--panel-bg);
+    border-bottom: 1px solid var(--border);
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+}
+
+.header h1 span {
+    color: #52738e;
+    font-weight: 470;
+}
+
+.workspace {
+    flex: 1;
+    min-height: 0;
+
+    display: grid;
+    grid-template-columns: 300px minmax(0, 1fr) 287px;
+}
+
+.side-bar {
+    min-height: 0;
+
+    display: flex;
+    flex-direction: column;
+
+    background: var(--panel-bg);
+    border-right: 1px solid #e0e7f0;
+
+    overflow-y: auto;
+}
+
+.side-bar-section {
+    padding: 20px 16px 17px;
+    border-bottom: 1px solid #e5ebf1;
+}
+
+.side-bar-divider {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    padding: 14px 16px 0;
+
+    color: #a3afbc;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.side-bar-divider::before,
+.side-bar-divider::after {
+    content: "";
+    flex: 1;
+    border-top: 1px solid #e5ebf1;
+}
+
+.main-panel {
+    min-width: 0;
+    min-height: 0;
+
+    display: flex;
+    flex-direction: column;
+
+    padding: 18px 18px 12px;
+}
+
+.graph-header {
+    flex-shrink: 0;
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+
+    margin-bottom: 12px;
 }

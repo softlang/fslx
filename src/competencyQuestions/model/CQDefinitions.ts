@@ -5,18 +5,12 @@ export const CQ_DEFINITIONS = [
     {
         id: "relation",
         label: "Related concepts",
-        example: "Which concepts are related to Java?",
+        question: "Which concepts are related to {subject}?",
+        info: "All resources that are directly connected to the resource, in either direction and by any predicate.",
         fields: [
             {
                 name: "subject",
-                type: "class",
-                label: "Subject",
-            },
-            {
-                name: "predicate",
-                type: "predicate",
-                label: "Relation",
-                optional: true
+                label: "Resource"
             }
         ]
     },
@@ -24,23 +18,16 @@ export const CQ_DEFINITIONS = [
     {
         id: "shared",
         label: "Shared concepts",
-        example: "Which concepts do Java and Python share?",
+        question: "Which concepts do {subjectA} and {subjectB} share?",
+        info: "All resources that both resources are connected to by the same predicate and in the same direction.",
         fields: [
             {
                 name: "subjectA",
-                type: "class",
-                label: "Subject"
+                label: "First resource"
             },
             {
                 name: "subjectB",
-                type: "class",
-                label: "Subject"
-            },
-            {
-                name: "predicate",
-                type: "predicate",
-                label: "Relation",
-                optional: true
+                label: "Second resource"
             }
         ]
     },
@@ -48,23 +35,16 @@ export const CQ_DEFINITIONS = [
     {
         id: "distinguishing",
         label: "Distinguishing concepts",
-        example: "Which concepts distinguish Java from Python?",
+        question: "Which concepts distinguish {subjectA} from {subjectB}?",
+        info: "All resources that only one of the two resources is connected to by a given predicate and direction.",
         fields: [
             {
                 name: "subjectA",
-                type: "class",
-                label: "Subject"
+                label: "First resource"
             },
             {
                 name: "subjectB",
-                type: "class",
-                label: "Subject"
-            },
-            {
-                name: "predicate",
-                type: "predicate",
-                label: "Relation",
-                optional: true
+                label: "Second resource"
             }
         ]
     },
@@ -72,17 +52,16 @@ export const CQ_DEFINITIONS = [
     {
         id: "classification",
         label: "Classification",
-        example: "Is HTML a Markup Language?",
+        question: "Is {subject} a {class}?",
+        info: "Shows how the resource is directly connected to the category, for example by rdf:type or rdfs:subClassOf.",
         fields: [
             {
                 name: "subject",
-                type: "class",
-                label: "Subject"
+                label: "Resource"
             },
             {
                 name: "class",
-                type: "class",
-                label: "Class",
+                label: "Category"
             }
         ]
     }

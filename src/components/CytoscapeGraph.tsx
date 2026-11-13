@@ -1,22 +1,14 @@
-import {type CSSProperties, type Dispatch, type SetStateAction, useCallback, useEffect, useMemo, useRef, useState} from "react";
+import {useCallback, useEffect, useMemo, useRef} from "react";
 import {OntologyGraphBuilder} from "../ontology/OntologyGraphBuilder.ts";
 import cytoscape from "cytoscape";
 import type {Ontology} from "../ontology/Ontology.ts";
 import type {OntologyClass} from "../ontology/types/OntologyClass.ts";
-import {createContext} from "../assets/GraphContextBuilder.ts";
 import "./css/CytoscapeGraph.css";
-import {renderEdgeTooltip, renderNodeTooltip} from "../assets/CytoscapeGraphTooltipBuilder.ts";
-import type { CQResult } from "../competencyQuestions/model/CQResult.ts";
 
 type Props = {
     ontology: Ontology,
-    visibleRelations: string[],
-    searchResults: OntologyClass[] | null,
-    setSearchResults: (results: OntologyClass[] | null) => void,
-    cqResult: CQResult | null,
-    setCQResult: (result: CQResult | null) => void,
-    breadCrumb: BreadcrumbItem[],
-    setBreadCrumb: Dispatch<SetStateAction<BreadcrumbItem[]>>,
+    graphContext: GraphContext,
+    onSelectClass: (clazz: OntologyClass) => void,
 };
 export type GraphContext = {
     originClasses: OntologyClass[];
@@ -29,18 +21,7 @@ export type GraphRelation = {
     predicate: string;
 }
 
-export type GraphView =
-    | {kind: "root"}
-    | {kind: "class", clazz: OntologyClass}
-    | {kind: "cq", result: CQResult}
-    | {kind: "search", results: OntologyClass[]}
-
-export type BreadcrumbItem = {
-    label: string,
-    view: GraphView
-}
-
-const VISIBLE_BREADCRUMB_ITEMS = 8;
+const MAX_LAYOUT_ZOOM = 2;
 
 const GRAPH_STYLE: cytoscape.StylesheetJson = [
     {
@@ -56,12 +37,15 @@ const GRAPH_STYLE: cytoscape.StylesheetJson = [
             label: "data(label)",
             color: "#F5F5F5",
             "font-size": 12,
+            "text-outline-color": "#5B8DEF",
+            "text-outline-width": 2,
 
             "text-valign": "center",
             "text-halign": "center",
 
             "text-max-width": "100",
             "text-wrap": "wrap",
+            "min-zoomed-font-size": 8,
         }
     },
     {
@@ -75,6 +59,7 @@ const GRAPH_STYLE: cytoscape.StylesheetJson = [
 
             "font-size": 14,
             "font-weight": "bold",
+            "text-outline-color": "#ef5b71",
             "text-valign": "center",
             "text-halign": "center",
         }
@@ -91,16 +76,17 @@ const GRAPH_STYLE: cytoscape.StylesheetJson = [
             "curve-style": "bezier",
 
             label: "data(label)",
-            color: "#D0D0D0",
+            color: "#555",
             "font-size": 10,
 
-            "text-background-color": "#15161C",
+            "text-background-color": "#F9FBFE",
             "text-background-opacity": 0.85,
             "text-background-padding": "3",
             "text-max-width": "100",
             "text-wrap": "wrap",
 
             "text-rotation": "autorotate",
+            "min-zoomed-font-size": 8,
 
         }
     },
@@ -121,58 +107,15 @@ const GRAPH_STYLE: cytoscape.StylesheetJson = [
             "line-color": "#5B8DEF",
             "target-arrow-color": "#5B8DEF",
 
-            color: "#8DB3FF",
+            color: "#5B8DEF",
         }
     },
 ];
 
-export default function CytoscapeGraph({
-                                           ontology,
-                                           visibleRelations,
-                                           searchResults,
-                                           setSearchResults,
-                                           cqResult,
-                                           setCQResult,
-                                           breadCrumb,
-                                           setBreadCrumb,
-                                       }: Props) {
+export default function CytoscapeGraph({ontology, graphContext, onSelectClass}: Props) {
 
     const graphRef = useRef<HTMLDivElement>(null);
-    const tooltipRef = useRef<HTMLDivElement>(null);
     const cyRef = useRef<cytoscape.Core | null>(null);
-    const [focusClass, setFocusClass] = useState<OntologyClass | null>(null);
-    const rootClasses = useMemo(
-        () => ontology.rootClassesIDs
-            .map(id => ontology.classes.get(id))
-            .filter((c): c is OntologyClass => c !== undefined),
-        [ontology]
-    );
-
-    const currentView: GraphView = useMemo(() => {
-        if (cqResult) {
-            return {kind: "cq", result: cqResult};
-        }
-        if (searchResults !== null) {
-            return {kind: "search", results: searchResults};
-        }
-        if (focusClass) {
-            return {kind: "class", clazz: focusClass};
-        }
-        return {kind: "root"};
-    }, [cqResult, focusClass, searchResults]);
-
-    const graphContext: GraphContext = useMemo(() => {
-        switch (currentView.kind) {
-            case "cq":
-                return currentView.result.graphContext;
-            case "search":
-                return {originClasses: currentView.results, relations: [], visibleRelations};
-            case "class":
-                return createContext([currentView.clazz], ontology, visibleRelations);
-            case "root":
-                return createContext(rootClasses, ontology, visibleRelations);
-        }
-    }, [currentView, ontology, rootClasses, visibleRelations]);
 
     const displayClasses = graphContext.originClasses;
 
@@ -180,14 +123,14 @@ export default function CytoscapeGraph({
         return displayClasses.length === 1
             ? {
                 name: "concentric",
-                padding: 0,
+                padding: 30,
                 animate: "end",
 
                 concentric: (node: cytoscape.NodeSingular) =>
                     node.id() === displayClasses[0].id ? 2 : 1,
 
                 levelWidth: () => 1,
-                minNodeSpacing: 10
+                minNodeSpacing: 60
             }
             : {
                 name: "cose",
@@ -198,35 +141,19 @@ export default function CytoscapeGraph({
             };
     }, [displayClasses]);
 
-    const hideTooltip = useCallback(() => {
-        tooltipRef.current?.classList.remove("visible");
+    const zoomBy = useCallback((factor: number) => {
+        const cy = cyRef.current;
+        if (!cy) return;
+
+        cy.zoom({
+            level: cy.zoom() * factor,
+            renderedPosition: {x: cy.width() / 2, y: cy.height() / 2}
+        });
     }, []);
 
-    const showView = useCallback((view: GraphView) => {
-        hideTooltip();
-        setCQResult(view.kind === "cq" ? view.result : null);
-        setSearchResults(view.kind === "search" ? view.results : null);
-        setFocusClass(view.kind === "class" ? view.clazz : null);
-    }, [hideTooltip, setCQResult, setSearchResults]);
-
-    const navigateToRoot = useCallback(() => {
-        showView({kind: "root"});
-        setBreadCrumb([]);
-    }, [setBreadCrumb, showView]);
-
-    const navigateToClass = useCallback((clazz: OntologyClass) => {
-        showView({kind: "class", clazz});
-
-        setBreadCrumb(prev => [...prev, {
-            label: clazz.name,
-            view: {kind: "class", clazz}
-        }]);
-    }, [setBreadCrumb, showView]);
-
-    const navigateToBreadcrumbItem = useCallback((item: BreadcrumbItem, index: number) => {
-        setBreadCrumb(prev => prev.slice(0, index + 1));
-        showView(item.view);
-    }, [setBreadCrumb, showView]);
+    const fitGraph = useCallback(() => {
+        cyRef.current?.fit(undefined, 30);
+    }, []);
 
     useEffect(() => {
         if (!graphRef.current) return;
@@ -255,29 +182,17 @@ export default function CytoscapeGraph({
 
             if (!clazz) return;
 
-            navigateToClass(clazz);
-        };
-        const onNodeMouseOver = (event: cytoscape.EventObject) => {
-            renderNodeTooltip(event, ontology, tooltipRef, graphRef);
-        };
-        const onEdgeMouseOver = (event: cytoscape.EventObject) => {
-            renderEdgeTooltip(event, tooltipRef, ontology);
+            onSelectClass(clazz);
         };
 
         cy.on("tap", "node", onNodeTap);
-        cy.on("mouseover", "node", onNodeMouseOver);
-        cy.on("mouseover", "edge", onEdgeMouseOver);
-        cy.on("mouseout", "node, edge", hideTooltip);
 
         return () => {
             if (cy.destroyed()) return;
 
             cy.removeListener("tap", "node", onNodeTap);
-            cy.removeListener("mouseover", "node", onNodeMouseOver);
-            cy.removeListener("mouseover", "edge", onEdgeMouseOver);
-            cy.removeListener("mouseout", "node, edge", hideTooltip);
         };
-    }, [hideTooltip, navigateToClass, ontology]);
+    }, [onSelectClass, ontology]);
 
     useEffect(() => {
         const cy = cyRef.current;
@@ -307,7 +222,12 @@ export default function CytoscapeGraph({
         });
 
         if (structureChanged) {
-            cy.layout(dynamicLayout).run();
+            const maxZoom = cy.maxZoom();
+            cy.maxZoom(MAX_LAYOUT_ZOOM);
+
+            const layout = cy.layout(dynamicLayout);
+            layout.one("layoutstop", () => cy.maxZoom(maxZoom));
+            layout.run();
         }
     }, [dynamicLayout, graphContext, ontology]);
 
@@ -331,39 +251,26 @@ export default function CytoscapeGraph({
 
     return (
         <div className="cytoscape-container">
-            <div className="cytoscape-breadcrumb"
-                 style={{"--breadcrumb-slots": VISIBLE_BREADCRUMB_ITEMS + 2} as CSSProperties}>
-                <span className="cytoscape-breadcrumb-list">
-                    <button type="button" onClick={navigateToRoot}
-                            className="cytoscape-breadcrumb-link">
-                        Root
-                    </button>
-                </span>
-                {breadCrumb.length > VISIBLE_BREADCRUMB_ITEMS &&
-                    <span className="cytoscape-breadcrumb-list">{" > …"}</span>
-                }
-                {breadCrumb
-                    .map((item, index) => ({item, index}))
-                    .slice(-VISIBLE_BREADCRUMB_ITEMS)
-                    .map(({item, index}) => (
-                        <span key={index} className="cytoscape-breadcrumb-list">
-                            {" > "}
-                            <button type="button" onClick={() => navigateToBreadcrumbItem(item, index)}
-                                    title={item.label}
-                                    className={`cytoscape-breadcrumb-link ${item.view.kind === "class" ? "" : "query"}`}>
-                                {item.label}
-                            </button>
-                        </span>
-                    ))}
+            <div className="cytoscape-panel">
+                <div
+                    ref={graphRef}
+                    className="cytoscape-graph"
+                />
+                <div className="cytoscape-tools">
+                    <button type="button" title="Zoom in" onClick={() => zoomBy(1.25)}>+</button>
+                    <button type="button" title="Zoom out" onClick={() => zoomBy(0.8)}>−</button>
+                    <button type="button" title="Fit graph" className="fit" onClick={fitGraph}>Fit</button>
+                </div>
+                <div className="cytoscape-hint">
+                    Click a node to explore it · Drag to pan · Scroll to zoom
+                </div>
             </div>
-            <div
-                ref={graphRef}
-                className="cytoscape-graph"
-            />
-            <div
-                ref={tooltipRef}
-                className="cytoscape-tooltip"
-            />
+            <div className="cytoscape-legend">
+                <span><i className="legend-dot focus"/> Selected resource</span>
+                <span><i className="legend-line outgoing"/> Outgoing relation</span>
+                <span><i className="legend-line incoming"/> Incoming relation</span>
+                <span>Arrow direction follows RDF subject → object</span>
+            </div>
 
         </div>
     );

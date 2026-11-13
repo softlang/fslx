@@ -1,49 +1,26 @@
 import {useEffect, useState} from "react";
 import "./css/PredicatesPicker.css";
-import PredicatesSelector from "../competencyQuestions/gui/PredicateSelector.tsx";
 
 type Props = {
     setPredicates: (predicates: string[]) => void,
     allPredicates: string[],
 };
 
-const storageKey = "predicates";
-
-const defaultPredicates = [
-    "subClassOf",
-    "elementOf",
-    "nativelySupports"
-]
-
-const readStoredPredicates = (): string[] => {
-    try {
-        const storedPredicates = window.localStorage.getItem(storageKey);
-
-        if (!storedPredicates) {
-            return defaultPredicates;
-        }
-
-        const parsed: unknown = JSON.parse(storedPredicates);
-
-        if (!Array.isArray(parsed) || parsed.some(value => typeof value !== "string")) {
-            return defaultPredicates;
-        }
-
-        return parsed as string[];
-    } catch {
-        return defaultPredicates;
-    }
-}
+const typePredicate = "rdf:type";
 
 export default function PredicatesPicker({setPredicates, allPredicates}: Props) {
-    const [selectedPredicates, setSelectedPredicates] = useState<string[]>(readStoredPredicates);
+    const [showType, setShowType] = useState(false);
 
     useEffect(() => {
-        setPredicates(selectedPredicates);
-        window.localStorage.setItem(storageKey, JSON.stringify(selectedPredicates));
-    }, [selectedPredicates, setPredicates]);
+        setPredicates(showType
+            ? allPredicates
+            : allPredicates.filter(predicate => predicate !== typePredicate));
+    }, [allPredicates, setPredicates, showType]);
 
     return (
-        <PredicatesSelector label="Predicates" predicates={allPredicates} value={selectedPredicates} onSelect={setSelectedPredicates}/>
+        <label className="predicates-picker">
+            <input type="checkbox" checked={showType} onChange={event => setShowType(event.target.checked)}/>
+            <span>Show rdf:type</span>
+        </label>
     );
 }

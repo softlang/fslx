@@ -1,8 +1,8 @@
-import {RDF} from "./vocabulary/rdf.ts";
-import {OWL} from "./vocabulary/owl.ts";
-import {RDFS} from "./vocabulary/rdfs.ts";
+import {RDF, RDF_NAMESPACE} from "./vocabulary/rdf.ts";
+import {OWL, OWL_NAMESPACE} from "./vocabulary/owl.ts";
+import {RDFS, RDFS_NAMESPACE} from "./vocabulary/rdfs.ts";
 import {TBOX_NAMESPACE} from "./vocabulary/tbox.ts";
-import {type NamedNode, type Node, type Statement, type Store} from "rdflib";
+import type {NamedNode, Statement, Store} from "rdflib";
 import {OntologyClass} from "./types/OntologyClass.ts";
 import type {OntologyRelation} from "./types/OntologyRelation.ts";
 import {OntologyParser} from "./OntologyParser.ts";
@@ -12,8 +12,9 @@ export class Ontology {
     public readonly store: Store;
     public readonly classes: Map<string, OntologyClass> = new Map();
     public rootClassesIDs: string[] = [];
+    public categoryIDs: string[] = [];
     public allPredicates: string[] = [];
-    private readonly predicateIRIs: Map<string, Set<string>> = new Map();
+    private readonly predicateIRIs: Map<string, string> = new Map();
     private readonly predicateNames: Map<string, string> = new Map();
 
     public constructor(store: Store) {
@@ -29,19 +30,15 @@ export class Ontology {
         this.parseAnnotations();
         this.parseRelations(relations);
         this.parseRootClasses();
+        this.parseCategories();
     }
 
     private parsePredicates(relations: OntologyRelation[]) {
-        const predicates = new Set(["type", "subClassOf", "elementOf"]);
+        const predicates = new Set(["rdf:type", "rdfs:subClassOf", "tbox:elementOf"]);
 
         relations.forEach(relation => {
-            const predicate = OntologyParser.shorten(relation.predicate.value);
-            let iris = this.predicateIRIs.get(predicate);
-            if (!iris) {
-                iris = new Set();
-                this.predicateIRIs.set(predicate, iris);
-            }
-            iris.add(relation.predicate.value);
+            const predicate = this.qualifiedName(relation.predicate.value);
+            this.predicateIRIs.set(predicate, relation.predicate.value);
             this.predicateNames.set(relation.predicate.value, predicate);
 
             if (relation.predicate.value.startsWith(TBOX_NAMESPACE)) {
@@ -118,6 +115,53 @@ export class Ontology {
         }
     }
 
+    private parseCategories() {
+        const declaredClasses = [
+            ...this.store.each(null, RDF.type, OWL.Class),
+            ...this.store.each(null, RDF.type, RDFS.Class)
+        ];
+        const typeObjects = this.store.statementsMatching(null, RDF.type, null)
+            .map(statement => statement.object)
+            .filter(node => !Ontology.isVocabulary(node.value));
+        const subClassNodes = this.store.statementsMatching(null, RDFS.subClassOf, null)
+            .flatMap(statement => [statement.subject, statement.object]);
+
+        const categoryIDs = new Set([...declaredClasses, ...typeObjects, ...subClassNodes]
+            .filter(Ontology.isNamedNode)
+            .map(node => node.value));
+
+        this.categoryIDs = [...categoryIDs].filter(id => this.classes.has(id));
+    }
+
+    public individualsOf(category: OntologyClass): OntologyClass[] {
+        const categoryIDs = new Set([category.id]);
+        const queue = [category.id];
+
+        while (queue.length > 0) {
+            const current = this.classes.get(queue.shift()!);
+            if (!current) continue;
+
+            this.subClassesOf(current)
+                .filter(id => !categoryIDs.has(id))
+                .forEach(id => {
+                    categoryIDs.add(id);
+                    queue.push(id);
+                });
+        }
+
+        const individuals = new Set<OntologyClass>();
+        categoryIDs.forEach(id => this.classes.get(id)?.incomingRelations
+            .filter(relation => relation.predicate.equals(RDF.type))
+            .forEach(relation => {
+                const individual = this.classes.get(relation.subject.value);
+                if (individual) {
+                    individuals.add(individual);
+                }
+            }));
+
+        return [...individuals];
+    }
+
     private subClassesOf(clazz: OntologyClass): string[] {
         return clazz.incomingRelations
             .filter(relation => relation.predicate.equals(RDFS.subClassOf))
@@ -134,13 +178,32 @@ export class Ontology {
     }
 
     public predicateName(relation: OntologyRelation): string {
-        return this.predicateNames.get(relation.predicate.value) ?? OntologyParser.shorten(relation.predicate.value);
+        return this.predicateNames.get(relation.predicate.value) ?? this.qualifiedName(relation.predicate.value);
+    }
+
+    public qualifiedName(iri: string): string {
+        const namespace = Object.entries(this.store.namespaces)
+            .find(([, uri]) => iri.startsWith(uri));
+
+        return namespace ? namespace[0] + ":" + iri.substring(namespace[1].length) : iri;
+    }
+
+    public expandedName(name: string): string {
+        const separator = name.indexOf(":");
+        const namespace = separator > 0 ? this.store.namespaces[name.substring(0, separator)] : undefined;
+
+        return namespace ? namespace + name.substring(separator + 1) : name;
+    }
+
+    public literalsOf(clazz: OntologyClass): Statement[] {
+        return this.store.statementsMatching(clazz.node, null, null)
+            .filter(statement => statement.object.termType === "Literal");
     }
 
     public predicateIRIsOf(predicates: string[]): Set<string> {
-        const iris = new Set<string>();
-        predicates.forEach(predicate => this.predicateIRIs.get(predicate)?.forEach(iri => iris.add(iri)));
-        return iris;
+        return new Set(predicates
+            .map(predicate => this.predicateIRIs.get(predicate))
+            .filter(iri => iri !== undefined));
     }
 
     public simpleSearchOntology(query: string): OntologyClass[] {
@@ -160,7 +223,11 @@ export class Ontology {
                     statement.object.equals(RDFS.Class)));
     }
 
-    private static isNamedNode(node: Node): node is NamedNode {
+    private static isVocabulary(iri: string): boolean {
+        return [OWL_NAMESPACE, RDF_NAMESPACE, RDFS_NAMESPACE].some(namespace => iri.startsWith(namespace));
+    }
+
+    private static isNamedNode(node: {termType: string}): node is NamedNode {
         return node.termType === "NamedNode";
     }
 }

@@ -1,9 +1,9 @@
 import {Namespace} from "rdflib";
 
-const NS = Namespace("http://www.w3.org/2002/07/owl#");
+export const OWL_NAMESPACE = "http://www.w3.org/2002/07/owl#";
+
+const NS = Namespace(OWL_NAMESPACE);
 
 export const OWL = {
-    Class: NS("Class"),
-    imports: NS("imports"),
-    sameAs: NS("sameAs"),
+    Class: NS("Class")
 } as const;

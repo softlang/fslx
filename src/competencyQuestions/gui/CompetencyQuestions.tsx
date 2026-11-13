@@ -1,15 +1,14 @@
-import {type Dispatch, type SetStateAction, useEffect, useMemo, useState} from "react";
-import type {BreadcrumbItem} from "../../components/CytoscapeGraph.tsx";
+import {type Dispatch, type SetStateAction, useCallback, useEffect, useState} from "react";
+import type {BreadcrumbItem} from "../../components/types/BreadcrumbItem.ts";
 import {type CQDefinition} from "../model/CQDefinitions.ts";
 import QuestionTypeSelector from "./QuestionTypeSelector.tsx";
 import type {Ontology} from "../../ontology/Ontology.ts";
 import ClassSelector from "./ClassSelector.tsx";
+import CQInfoDialog from "./CQInfoDialog.tsx";
 import "./css/CompetencyQuestions.css";
-import PredicatesSelector from "./PredicateSelector.tsx";
 import {CQExecutor} from "../model/CQExecutor.ts";
 import type {CQValues} from "../model/CQValues.ts";
 import type {CQResult} from "../model/CQResult.ts";
-import type {OntologyClass} from "../../ontology/types/OntologyClass.ts";
 
 type Props = {
     ontology: Ontology,
@@ -20,37 +19,9 @@ type Props = {
 export default function CompetencyQuestions({ontology, setCQResult, setBreadCrumb}: Props) {
     const [selectedDefinition, setSelectedDefinition] = useState<CQDefinition | null>(null);
     const [values, setValues] = useState<CQValues>({});
+    const [infoOpen, setInfoOpen] = useState(false);
 
-    const relevantPredicates = useMemo(() => {
-        const classes = Object.values(values)
-            .filter(value => typeof value === "string")
-            .filter(value => value.length > 0);
-
-        if (classes.length === 0) {
-            return ontology.allPredicates;
-        }
-
-        const p = new Set<string>();
-        for (const c of classes) {
-            const ontologyClass: OntologyClass | undefined = ontology.classes.get(c);
-            if (!ontologyClass) {
-                continue;
-            }
-            ontologyClass.relations.forEach(r => p.add(ontology.predicateName(r)));
-            ontologyClass.incomingRelations.forEach(r => p.add(ontology.predicateName(r)));
-        }
-
-        return ontology.allPredicates.filter(predicate => p.has(predicate));
-    }, [ontology, values]);
-    
-    const isComplete = selectedDefinition?.fields.every(field => {
-        if (field.optional) {
-            return true;
-        }
-
-        const value = values[field.name];
-        return Array.isArray(value) ? value.length > 0 : Boolean(value);
-    }) ?? false;
+    const isComplete = selectedDefinition?.fields.every(field => Boolean(values[field.name])) ?? false;
 
     useEffect(() => {
         if (!isComplete) {
@@ -76,7 +47,7 @@ export default function CompetencyQuestions({ontology, setCQResult, setBreadCrum
         setCQResult(null);
     }
 
-    const setFieldValue = (fieldName: string, value: string | string[]) => {
+    const setFieldValue = (fieldName: string, value: string) => {
         setValues(prevValues => ({...prevValues, [fieldName]: value}));
     }
 
@@ -85,48 +56,52 @@ export default function CompetencyQuestions({ontology, setCQResult, setBreadCrum
         return typeof value === "string" ? value : null;
     }
 
-    const predicateValues = (fieldName: string): string[] => {
-        const value = values[fieldName];
-        return Array.isArray(value) ? value : [];
-    }
+    const closeInfo = useCallback(() => setInfoOpen(false), []);
+
+    const filledQuestion = selectedDefinition?.question.replace(/\{(\w+)}/g, (_, name: string) => {
+        const field = selectedDefinition.fields.find(f => f.name === name);
+        const value = classValue(name);
+        return (value && ontology.classes.get(value)?.name) || `[${field?.label ?? name}]`;
+    });
 
     return (
         <div className="cq-builder">
 
             <div className="cq-builder-header">
-                <h2>Query Ontology</h2>
+                <h2>Ask a competency question</h2>
 
-                <QuestionTypeSelector selectedDefinition={selectedDefinition}
-                                      setSelectedDefinition={selectDefinition}/>
+                <div className="cq-builder-selection">
+                    <QuestionTypeSelector selectedDefinition={selectedDefinition}
+                                          setSelectedDefinition={selectDefinition}/>
+                    {selectedDefinition &&
+                        <button type="button" className="cq-builder-info" title="About this question"
+                                onClick={() => setInfoOpen(true)}>i</button>
+                    }
+                </div>
 
             </div>
 
             {selectedDefinition && (
-                <div className="cq-builder-question">
-                    {selectedDefinition.fields.map(field => (
-                        <div key={field.name} className="cq-builder-field">
-
-                            {field.type === "class" ?
-
+                <>
+                    <p className="cq-builder-question-text">{filledQuestion}</p>
+                    <div className="cq-builder-question">
+                        {selectedDefinition.fields.map(field => (
+                            <div key={field.name} className="cq-builder-field">
                                 <ClassSelector
                                     ontology={ontology}
                                     label={field.label}
                                     value={classValue(field.name)}
                                     onSelect={(value: string) => setFieldValue(field.name, value)}
                                 />
-                                :
-                                <PredicatesSelector
-                                    predicates={relevantPredicates}
-                                    label={field.label}
-                                    value={predicateValues(field.name)}
-                                    onSelect={(value: string[]) => setFieldValue(field.name, value)}
-                                />
-                            }
-                        </div>
-                    ))}
-                </div>
+                            </div>
+                        ))}
+                    </div>
+                </>
             )}
 
+            {selectedDefinition && infoOpen &&
+                <CQInfoDialog definition={selectedDefinition} onClose={closeInfo}/>
+            }
 
         </div>
     );

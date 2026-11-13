@@ -1,6 +1,8 @@
 import {Namespace} from "rdflib";
 
-const NS = Namespace("http://www.w3.org/2000/01/rdf-schema#");
+export const RDFS_NAMESPACE = "http://www.w3.org/2000/01/rdf-schema#";
+
+const NS = Namespace(RDFS_NAMESPACE);
 
 export const RDFS = {
     Class: NS("Class"),

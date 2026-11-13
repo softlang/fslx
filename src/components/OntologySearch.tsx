@@ -23,7 +23,7 @@ export default function OntologySearch({ontology, setSearchResults}: Props) {
 
     return (
         <div className="search-container">
-            <input className="ontology-search" type="text" placeholder="Search..." onChange={searchTermChanged}/>
+            <input className="ontology-search" type="text" placeholder="Search all resources..." onChange={searchTermChanged}/>
         </div>
     );
 }

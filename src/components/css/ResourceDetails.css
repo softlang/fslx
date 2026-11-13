@@ -1,0 +1,161 @@
+.details-panel {
+    min-height: 0;
+
+    padding: 22px 19px;
+
+    background: var(--panel-bg);
+    border-left: 1px solid #e0e7f0;
+
+    overflow-y: auto;
+}
+
+.details-panel h2 {
+    font-size: 17px;
+}
+
+.details-panel h3 {
+    margin: 24px 0 10px;
+
+    color: #657c92;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.details-kicker {
+    display: block;
+
+    color: #3386c9;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 1.1px;
+    text-transform: uppercase;
+}
+
+.details-title {
+    margin: 8px 0 10px;
+    overflow-wrap: anywhere;
+}
+
+.details-comment {
+    color: #3b566e;
+    font-size: 12px;
+    line-height: 1.55;
+}
+
+.details-muted {
+    color: var(--text-muted);
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+.details-iri {
+    padding: 10px;
+
+    background: #f8fafc;
+    border: 1px solid #e2e9f0;
+    border-radius: 7px;
+
+    color: #526d84;
+    font: 11px/1.55 var(--mono);
+    overflow-wrap: anywhere;
+}
+
+.details-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.details-pill {
+    max-width: 100%;
+    padding: 5px 8px;
+
+    background: #ebf4fd;
+    border-radius: 5px;
+
+    color: #2670b0;
+    font-size: 11px;
+    overflow-wrap: anywhere;
+}
+
+.details-counts {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 9px;
+}
+
+.details-counts div {
+    padding: 12px;
+
+    background: #f5f8fc;
+    border: 1px solid #e4ebf2;
+    border-radius: 8px;
+}
+
+.details-counts strong {
+    display: block;
+
+    color: #255781;
+    font-size: 21px;
+    font-variant-numeric: tabular-nums;
+}
+
+.details-counts small {
+    display: block;
+    margin-top: 3px;
+
+    color: #90a0ae;
+    font-size: 10px;
+}
+
+.details-links {
+    margin: 0;
+    padding: 0;
+
+    list-style: none;
+}
+
+.details-links li {
+    padding: 4px 0;
+    font-size: 12px;
+    overflow-wrap: anywhere;
+}
+
+.details-links a {
+    color: #267ebf;
+    text-decoration: none;
+}
+
+.details-links a:hover {
+    text-decoration: underline;
+}
+
+.details-literals {
+    margin: 0;
+}
+
+.details-literals div {
+    padding: 10px 0;
+    border-bottom: 1px solid #e8edf2;
+}
+
+.details-literals dt {
+    color: #3786be;
+    font-size: 11px;
+    font-weight: 650;
+    overflow-wrap: anywhere;
+}
+
+.details-literals dd {
+    margin: 5px 0 0;
+
+    color: #3b566e;
+    font-size: 12px;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+
+.details-literals small {
+    color: #94a4b1;
+}

@@ -24,7 +24,7 @@ export default function QuestionTypeSelector({selectedDefinition, setSelectedDef
                 definition => ({
                     value: definition.label,
                     label: definition.label,
-                    toolTip: `Example: ${definition.example}`
+                    toolTip: definition.question
                 })
             )}
             onClickEvent={content => handleClickEvent(content.value)}

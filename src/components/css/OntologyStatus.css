@@ -1,0 +1,26 @@
+.ontology-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    color: #687e91;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.status-dot {
+    width: 7px;
+    height: 7px;
+    margin-right: 2px;
+
+    background: #49ae83;
+    border-radius: 50%;
+}
+
+.status-dot.missing {
+    background: #ca514b;
+}
+
+.status-separator {
+    padding: 0 3px;
+}

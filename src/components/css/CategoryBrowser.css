@@ -1,0 +1,43 @@
+.step-heading {
+    display: flex;
+    align-items: flex-start;
+    gap: 11px;
+
+    margin-bottom: 13px;
+}
+
+.step-heading h2 {
+    margin: 0;
+}
+
+.step-heading p {
+    margin: 4px 0 0;
+
+    color: var(--text-muted);
+    font-size: 11px;
+}
+
+.step {
+    flex: none;
+
+    width: 30px;
+    height: 30px;
+
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+
+    background: #e9f3fc;
+    border: 1px solid #d7e7f7;
+    border-radius: 8px;
+
+    color: #2575b9;
+    font-size: 11px;
+    font-weight: 750;
+}
+
+.step-note {
+    color: #8da0b1;
+    font-size: 11px;
+    line-height: 1.5;
+}

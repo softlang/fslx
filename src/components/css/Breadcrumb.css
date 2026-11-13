@@ -1,0 +1,46 @@
+.breadcrumb {
+    flex: 1;
+    min-width: 0;
+
+    color: #395e81;
+    font-size: 12px;
+    font-weight: 650;
+
+    white-space: nowrap;
+    overflow-x: auto;
+}
+
+.breadcrumb-list {
+    cursor: default;
+}
+
+.breadcrumb-link.query {
+    font-style: italic;
+}
+
+.breadcrumb-link {
+    padding: 0;
+    max-width: calc(100% / var(--breadcrumb-slots));
+
+    display: inline-block;
+    vertical-align: bottom;
+
+    background: none;
+    border: none;
+
+    color: inherit;
+
+    font-family: inherit;
+    font-size: inherit;
+    font-weight: inherit;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    cursor: pointer;
+}
+
+.breadcrumb-link:hover {
+    color: var(--accent);
+}
